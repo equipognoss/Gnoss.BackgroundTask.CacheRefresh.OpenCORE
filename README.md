@@ -1,3 +1,5 @@
+![](https://content.gnoss.ws/imagenes/proyectos/personalizacion/7e72bf14-28b9-4beb-82f8-e32a3b49d9d3/cms/logognossazulprincipal.png)
+
 # Gnoss.BackgroundTask.CacheRefresh.OpenCORE
 
 Aplicación de segundo plano que se encarga de invalidar las cachés que necesitan ser actualizadas. Por ejemplo, actualiza las primeras páginas de búsqueda, los componentes de recursos de la home de una comunidad cuando se ha publicado un recurso nuevo, etc., para que aparezcan los nuevos recursos.  
@@ -5,7 +7,7 @@ Aplicación de segundo plano que se encarga de invalidar las cachés que necesit
 Configuración estandar de esta aplicación en el archivo docker-compose.yml: 
 
 ```yml
-refresco_cache:
+cacherefresh:
     image: cacherefresh
     env_file: .env
     environment:
@@ -31,7 +33,7 @@ refresco_cache:
      connectionType: "0"
      intervalo: "100"
     volumes:
-     - ./logs/refresco_cache:/app/logs
+     - ./logs/cacherefresh:/app/logs
 ```
 
 Se pueden consultar los posibles valores de configuración de cada parámetro aquí: https://github.com/equipognoss/Gnoss.Platform.Deploy
