@@ -8,7 +8,7 @@ Configuración estandar de esta aplicación en el archivo docker-compose.yml:
 
 ```yml
 cacherefresh:
-    image: cacherefresh
+    image: gnoss/cacherefresh
     env_file: .env
     environment:
      virtuosoConnectionString: ${virtuosoConnectionString}
