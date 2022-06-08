@@ -4,6 +4,8 @@
 
 Aplicación de segundo plano que se encarga de invalidar las cachés que necesitan ser actualizadas. Por ejemplo, actualiza las primeras páginas de búsqueda, los componentes de recursos de la home de una comunidad cuando se ha publicado un recurso nuevo, etc., para que aparezcan los nuevos recursos.  
 
+Este servicio está escuchando la cola de nombre "ColaRefrescoCache". Se envía un mensaje a esta cola cada vez que se crea, comparte, edita o elimina un recurso o se da de alta, edita su perfil o se da de baja una persona de una comunidad desde la Web o el API, para que este servicio se encargue de invalidar la caché de la primera página de búsqueda donde un recurso o usuario podría aparecer. 
+
 Configuración estandar de esta aplicación en el archivo docker-compose.yml: 
 
 ```yml
