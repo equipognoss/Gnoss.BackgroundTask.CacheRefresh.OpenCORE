@@ -12,7 +12,7 @@ Configuración estandar de esta aplicación en el archivo docker-compose.yml:
 
 ```yml
 cacherefresh:
-    image: gnoss/cacherefresh
+    image: gnoss/gnoss.backgroundtask.cacherefresh.opencore
     env_file: .env
     environment:
      virtuosoConnectionString: ${virtuosoConnectionString}
