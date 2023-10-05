@@ -110,7 +110,9 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 LoggingService loggingService = scope.ServiceProvider.GetRequiredService<LoggingService>();
                 VirtuosoAD virtuosoAD = scope.ServiceProvider.GetRequiredService<VirtuosoAD>();
                 RedisCacheWrapper redisCacheWrapper = scope.ServiceProvider.GetRequiredService<RedisCacheWrapper>();
+                ConfigService configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
                 IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication = scope.ServiceProvider.GetRequiredService<IServicesUtilVirtuosoAndReplication>();
+                ComprobarTraza("CacheRefresh", entityContext, loggingService, redisCacheWrapper, configService, servicesUtilVirtuosoAndReplication);
                 try
                 {
                     ComprobarCancelacionHilo();
@@ -146,8 +148,6 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
                         filaCola = null;
 
-                        servicesUtilVirtuosoAndReplication.ConexionAfinidad = "";
-
                         ControladorConexiones.CerrarConexiones(false);
                         UtilPeticion.EliminarObjetosDeHilo(Thread.CurrentThread.ManagedThreadId);
                     }
@@ -157,6 +157,10 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 {
                     loggingService.GuardarLogError(ex);
                     return true;
+                }
+                finally
+                {
+                    GuardarTraza(loggingService);
                 }
             }
         }
