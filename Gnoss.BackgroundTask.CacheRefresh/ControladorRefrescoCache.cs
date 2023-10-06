@@ -72,9 +72,13 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
         private Dictionary<Guid, string> mListaUrlPorProyecto = new Dictionary<Guid, string>();
 
+        private List<string> mListaProyectos = new List<string>();
+
         private int mNumeroMaxPeticionesWebSimultaneas = 5;
 
         private List<BusquedaRefrescoCaducidad> mListaBusquedaRefrescoCaducidad = new List<BusquedaRefrescoCaducidad>();
+
+        RabbitMQClient mRabbitMQClient;
 
 
         #endregion
@@ -101,9 +105,10 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
         #region Métodos generales
 
         Dictionary<string, DateTime> peticionesProcesadas = new Dictionary<string, DateTime>();
-        
+
         private bool ProcesarItem(string pFila)
         {
+
             using (var scope = ScopedFactory.CreateScope())
             {
                 EntityContext entityContext = scope.ServiceProvider.GetRequiredService<EntityContext>();
@@ -144,7 +149,14 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                             peticionesProcesadas[item] = DateTime.Now;
                         }
 
-                        ProcesarFilaColaRefrescoCache(filaCola, entityContext, loggingService, redisCacheWrapper, virtuosoAD, servicesUtilVirtuosoAndReplication);
+                        if (!filaCola.TipoEvento.Equals((short)TiposEventosRefrescoCache.BusquedaVirtuoso) || (filaCola.TipoEvento.Equals((short)TiposEventosRefrescoCache.BusquedaVirtuoso) && !mListaProyectos.Contains(filaCola.ProyectoID.ToString())))
+                        {
+                            ProcesarFilaColaRefrescoCache(filaCola, entityContext, loggingService, redisCacheWrapper, virtuosoAD, servicesUtilVirtuosoAndReplication);
+                            if (filaCola.TipoEvento.Equals((short)TiposEventosRefrescoCache.BusquedaVirtuoso))
+                            {
+                                mListaProyectos.Add(filaCola.ProyectoID.ToString());
+                            }
+                        }
 
                         filaCola = null;
 
@@ -180,7 +192,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 catch (Exception ex)
                 {
                     pFilaColaRefrescoCache.Estado = 1;
-                    EnviarCorreoErrorYGuardarLog(ex, "Error Refresco caché (ProcesarFilaModificarCaducidadCache)",entityContext, loggingService);
+                    EnviarCorreoErrorYGuardarLog(ex, "Error Refresco caché (ProcesarFilaModificarCaducidadCache)", entityContext, loggingService);
                 }
             }
             else
@@ -188,7 +200,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 var busquedaRefrescoCaducidad = mListaBusquedaRefrescoCaducidad.FirstOrDefault(item => item.ProyectoID.Equals(pFilaColaRefrescoCache.ProyectoID) && item.TipoBusqueda.Equals(pFilaColaRefrescoCache.TipoBusqueda));
                 if (busquedaRefrescoCaducidad == null || busquedaRefrescoCaducidad.Caducidad.AddMinutes(1) < DateTime.Now)
                 {
-                    if(busquedaRefrescoCaducidad != null)
+                    if (busquedaRefrescoCaducidad != null)
                     {
                         mListaBusquedaRefrescoCaducidad.Remove(busquedaRefrescoCaducidad);
                     }
@@ -216,12 +228,12 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             {
                 RabbitMQClient.ReceivedDelegate funcionProcesarItem = new RabbitMQClient.ReceivedDelegate(ProcesarItem);
                 RabbitMQClient.ShutDownDelegate funcionShutDown = new RabbitMQClient.ShutDownDelegate(OnShutDown);
-                
-                RabbitMQClient rabbitMQClient = new RabbitMQClient(RabbitMQClient.BD_SERVICIOS_WIN, NOMBRE_COLA, loggingService, mConfigService, EXCHANGE, NOMBRE_COLA);
 
+                mRabbitMQClient = new RabbitMQClient(RabbitMQClient.BD_SERVICIOS_WIN, NOMBRE_COLA, loggingService, mConfigService, EXCHANGE, NOMBRE_COLA);
+                mListaProyectos = new List<string>();
                 try
                 {
-                    rabbitMQClient.ObtenerElementosDeCola(funcionProcesarItem, funcionShutDown);
+                    mRabbitMQClient.ObtenerElementosDeCola(funcionProcesarItem, funcionShutDown);
                     mReiniciarLecturaRabbit = false;
                 }
                 catch (Exception ex)
@@ -349,16 +361,34 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             parametroAplicacionGBD.ObtenerConfiguracionGnoss(GestorParametroAplicacionDS);
             mUrlIntragnoss = GestorParametroAplicacionDS.ParametroAplicacion.Where(parametroApp => parametroApp.Parametro.Equals("UrlIntragnoss")).FirstOrDefault().Valor;
 
-            mDominio = GestorParametroAplicacionDS.ParametroAplicacion.Where(parametroApp=>parametroApp.Parametro.Equals("UrlIntragnoss")).FirstOrDefault().Valor;
+            mDominio = GestorParametroAplicacionDS.ParametroAplicacion.Where(parametroApp => parametroApp.Parametro.Equals("UrlIntragnoss")).FirstOrDefault().Valor;
             mDominio = mDominio.Replace("http://", "").Replace("www.", "");
 
             if (mDominio[mDominio.Length - 1] == '/')
             {
                 mDominio = mDominio.Substring(0, mDominio.Length - 1);
             }
+            if (mConfigService.UsarCacheRefreshActiva())
+            {
+                while (true)
+                {
+                    Task tarea = Task.Factory.StartNew(() => RealizarMantenimientoRabbitMQ(loggingService));
 
-            RealizarMantenimientoRabbitMQ(loggingService);
-            RealizarMantenimientoBaseDatosColas();            
+                    Thread.Sleep(60000); // 1 minuto
+
+                    if (mRabbitMQClient != null)
+                    {
+                        mRabbitMQClient.CerrarConexionLectura();
+                        mRabbitMQClient.Dispose();
+                    }
+
+                    Thread.Sleep(300000);// 5 minutos
+                }
+            }
+            else
+            {
+                RealizarMantenimientoRabbitMQ(loggingService);
+            }
         }
 
         private void ProcesarFila(BaseComunidadDS.ColaRefrescoCacheRow pFilaCola, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, VirtuosoAD virtuosoAD, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
@@ -582,10 +612,10 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 facetadoCL.InvalidarResultadosYFacetasDeBusquedaEnProyecto(pFilaCola.ProyectoID, FacetadoAD.TipoBusquedaToString((TipoBusqueda)pFilaCola.TipoBusqueda), true);
                 facetadoCL.BorrarRSSDeComunidad(pFilaCola.ProyectoID);
 
-                if (!pFilaCola.IsInfoExtraNull() && pFilaCola.InfoExtra.StartsWith("rdf:type="))
+                /*if (!pFilaCola.IsInfoExtraNull() && pFilaCola.InfoExtra.StartsWith("rdf:type="))
                 {
                     facetadoCL.InvalidarResultadosYFacetasDeBusquedaEnProyecto(pFilaCola.ProyectoID, pFilaCola.InfoExtra, true);
-                }
+                }*/
 
                 //Si contiene el tipo de búsqueda que se está pidiendo se necesitan limpiar todas las pestanyas que contengan esa búsqueda.
                 ProyectoCN proyCN = new ProyectoCN(entityContext, loggingService, mConfigService, servicesUtilVirtuosoAndReplication);
@@ -843,7 +873,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             GestorParametroGeneral gestorParametroGeneral = new GestorParametroGeneral();
             //ParametroAplicacionGBD parametroAplicacionGBD = new ParametroAplicacionGBD();
             //gestorParametroGeneral= parametroAplicacionGBD.ObtenerParametrosGeneralesDeProyecto(gestorParametroGeneral,pProyectoID);
-             gestorParametroGeneral = paramCL.ObtenerParametrosGeneralesDeProyecto(pProyectoID);
+            gestorParametroGeneral = paramCL.ObtenerParametrosGeneralesDeProyecto(pProyectoID);
             //paramCL.Dispose();
 
             ParametroGeneral parametroGeneralBusqueda = gestorParametroGeneral.ListaParametroGeneral.Where(parametroGeneral => parametroGeneral.ProyectoID.Equals(pProyectoID)).FirstOrDefault();
@@ -876,7 +906,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
         private void RefrescarCacheComponente(CMSComponente filaComponente, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
         {
-            RealizarPeticionWebRefrescoCache(filaComponente, entityContext, loggingService, redisCacheWrapper,servicesUtilVirtuosoAndReplication);
+            RealizarPeticionWebRefrescoCache(filaComponente, entityContext, loggingService, redisCacheWrapper, servicesUtilVirtuosoAndReplication);
         }
 
         private void ActualizarFechaProximaActualizacionComponente(CMSComponente pFilaComponente, DateTime pFechaActualizacion, bool pActualizarBD, EntityContext entityContext, LoggingService loggingService, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
@@ -987,7 +1017,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
         //    CMSCN cmsCN = new CMSCN(mFicheroConfiguracionBD);
         //    mCmsDS = cmsCN.ObtenerComponentesCMSDeProyecto(pProyectoID);
 
-            
+
         //    foreach (CMSDS.CMSComponenteRow filaComponente in mCmsDS.CMSComponente)
         //    {
         //        TipoCaducidadComponenteCMS tipoCaducidad = (TipoCaducidadComponenteCMS)filaComponente.TipoCaducidadComponente;
