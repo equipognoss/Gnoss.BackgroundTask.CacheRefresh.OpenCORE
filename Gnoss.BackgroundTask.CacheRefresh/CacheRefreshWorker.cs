@@ -1,3 +1,4 @@
+using Es.Riam.Gnoss.CL.ServiciosGenerales;
 using Es.Riam.Gnoss.Servicios;
 using Es.Riam.Gnoss.Util.Configuracion;
 using Es.Riam.Gnoss.Win.RefrescoCache;
@@ -16,11 +17,12 @@ namespace Gnoss.BackgroundTask.CacheRefresh
     {
         private readonly ILogger<CacheRefreshWorker> _logger;
         private readonly ConfigService _configService;
-
-        public CacheRefreshWorker(ILogger<CacheRefreshWorker> logger, ConfigService configService, IServiceScopeFactory scopeFactory) : base(logger, scopeFactory)
+        private ILoggerFactory mLoggerFactory;
+        public CacheRefreshWorker(ILogger<CacheRefreshWorker> logger, ConfigService configService, IServiceScopeFactory scopeFactory, ILoggerFactory loggerFactory) : base(logger, scopeFactory)
         {
             _logger = logger;
             _configService = configService;
+            mLoggerFactory = loggerFactory;
         }
 
         protected override List<ControladorServicioGnoss> ObtenerControladores()
@@ -28,7 +30,7 @@ namespace Gnoss.BackgroundTask.CacheRefresh
             List<ControladorServicioGnoss> controladores = new List<ControladorServicioGnoss>();
             int numMaxPeticionesWebSimultaneas = _configService.ObtenerNumMaxPeticionesWebSimultaneas();
 
-            controladores.Add(new ControladorRefrescoCache(numMaxPeticionesWebSimultaneas, ScopedFactory, _configService));
+            controladores.Add(new ControladorRefrescoCache(numMaxPeticionesWebSimultaneas, ScopedFactory, _configService, mLoggerFactory.CreateLogger<ControladorRefrescoCache>(), mLoggerFactory));
             return controladores;
         }
     }

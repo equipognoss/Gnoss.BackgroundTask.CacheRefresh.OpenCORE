@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using Es.Riam.Gnoss.Servicios;
-using System.Net;
-using Es.Riam.Gnoss.Util.General;
-using Es.Riam.Gnoss.Logica.CMS;
-using Es.Riam.Gnoss.Web.MVC.Models.Administracion;
-using Es.Riam.Gnoss.CL.CMS;
-using Es.Riam.Gnoss.AD.EntityModel.Models.CMS;
-using Microsoft.Extensions.DependencyInjection;
-using Es.Riam.Gnoss.Util.Configuracion;
+﻿using Es.Riam.AbstractsOpen;
 using Es.Riam.Gnoss.AD.EntityModel;
+using Es.Riam.Gnoss.AD.EntityModel.Models.CMS;
 using Es.Riam.Gnoss.AD.EntityModelBASE;
 using Es.Riam.Gnoss.AD.Virtuoso;
 using Es.Riam.Gnoss.CL;
-using Es.Riam.AbstractsOpen;
+using Es.Riam.Gnoss.CL.CMS;
+using Es.Riam.Gnoss.CL.ServiciosGenerales;
+using Es.Riam.Gnoss.Logica.CMS;
+using Es.Riam.Gnoss.Servicios;
+using Es.Riam.Gnoss.Util.Configuracion;
+using Es.Riam.Gnoss.Util.General;
+using Es.Riam.Gnoss.Web.MVC.Models.Administracion;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Net;
 
 namespace Es.Riam.Gnoss.Win.RefrescoCache
 {
@@ -23,11 +25,13 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
         
         public string UrlRefrescoComponente { get; set; }
         public Dictionary<string, List<string>> PeticionesWebActuales { get; set; }
-
-        public RealizarPeticionWebRefrescoCache(IServiceScopeFactory scopedFactory, ConfigService configService)
-            : base(scopedFactory, configService)
+        private ILogger mlogger;
+        private ILoggerFactory mLoggerFactory;
+        public RealizarPeticionWebRefrescoCache(IServiceScopeFactory scopedFactory, ConfigService configService, ILogger<RealizarPeticionWebRefrescoCache> logger, ILoggerFactory loggerFactory)
+            : base(scopedFactory, configService,logger,loggerFactory)
         {
-
+            mlogger = logger;
+            mLoggerFactory = loggerFactory;
         }
 
         public override void RegistrarInicio(LoggingService loggingService)
@@ -70,11 +74,11 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             {
                 try
                 {
-                    loggingService.GuardarLog("Error al refrescar el componente: " + FilaComponente.ComponenteID + " en la url: " + UrlRefrescoComponente + " \r\n" + loggingService.DevolverCadenaError(ex, "1.0"));
+                    loggingService.GuardarLog("Error al refrescar el componente: " + FilaComponente.ComponenteID + " en la url: " + UrlRefrescoComponente + " \r\n" + loggingService.DevolverCadenaError(ex, "1.0"), mlogger);
                 }
                 catch (Exception) { }
 
-                CMSCL cmsCL = new CMSCL(entityContext, loggingService, redisCacheWrapper, mConfigService, servicesUtilVirtuosoAndReplication);
+                CMSCL cmsCL = new CMSCL(entityContext, loggingService, redisCacheWrapper, mConfigService, servicesUtilVirtuosoAndReplication, mLoggerFactory.CreateLogger<CMSCL>(), mLoggerFactory);
                 cmsCL.InvalidarCacheDeComponentePorIDEnProyectoTodosIdiomas(FilaComponente.ProyectoID, FilaComponente.ComponenteID);
                 cmsCL.Dispose();
             }
@@ -99,7 +103,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
         private void ActualizarFechaProximaActualizacionComponente(CMSComponente pFilaComponente, DateTime pFechaActualizacion, EntityContext entityContext, LoggingService loggingService, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
         {
-            CMSCN cmsCN = new CMSCN(entityContext, loggingService, mConfigService, servicesUtilVirtuosoAndReplication);
+            CMSCN cmsCN = new CMSCN(entityContext, loggingService, mConfigService, servicesUtilVirtuosoAndReplication, mLoggerFactory.CreateLogger<CMSCN>(), mLoggerFactory);
             cmsCN.ActualizarCaducidadComponente(pFilaComponente.ComponenteID, pFechaActualizacion);
             cmsCN.Dispose();
         }
@@ -116,7 +120,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
         protected override ControladorServicioGnoss ClonarControlador()
         {
-            return new RealizarPeticionWebRefrescoCache(ScopedFactory, mConfigService);
+            return new RealizarPeticionWebRefrescoCache(ScopedFactory, mConfigService, mLoggerFactory.CreateLogger<RealizarPeticionWebRefrescoCache>(), mLoggerFactory);
         }
     }
 }
