@@ -9,13 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl
 
 WORKDIR /app
 
-COPY Gnoss.BackgroundTask.CacheRefresh/*.csproj ./
-
-RUN dotnet restore
-
 COPY . ./
 
-RUN dotnet publish Gnoss.BackgroundTask.CacheRefresh/Gnoss.BackgroundTask.CacheRefresh.csproj -c Release -o out
+RUN dotnet restore Gnoss.BackgroundTask.CacheRefresh.OpenCORE/Gnoss.BackgroundTask.CacheRefresh/Gnoss.BackgroundTask.CacheRefresh.csproj
+
+RUN dotnet publish Gnoss.BackgroundTask.CacheRefresh.OpenCORE/Gnoss.BackgroundTask.CacheRefresh/Gnoss.BackgroundTask.CacheRefresh.csproj -c Release -o out
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
