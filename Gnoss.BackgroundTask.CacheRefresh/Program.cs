@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
+using Serilog;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,7 +31,19 @@ namespace Gnoss.BackgroundTask.CacheRefresh
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            LoggingService.ConfigurarBasicStartupSerilog().CreateBootstrapLogger();
+            try
+            {
+                CreateHostBuilder(args).Build().Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Error fatal durante el arranque");
+            }
+            finally
+            {
+                Log.CloseAndFlush(); // asegura que se escriben todos los logs pendientes
+            }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -42,10 +55,11 @@ namespace Gnoss.BackgroundTask.CacheRefresh
                     config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
                     config.AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
                 })
+                .UseSerilog((context, services, configuration) => LoggingService.ConfigurarSerilog(context.Configuration, services, configuration))
                 .ConfigureServices((hostContext, services) =>
                 {
                     IConfiguration configuration = hostContext.Configuration;
-                    LoggingService.ConfigurarLogging(services, configuration);
+
                     AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 					services.AddScoped(typeof(UtilTelemetry));
                     services.AddScoped(typeof(Usuario));
