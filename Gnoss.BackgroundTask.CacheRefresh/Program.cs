@@ -3,22 +3,24 @@ using Es.Riam.Gnoss.AD.EntityModel;
 using Es.Riam.Gnoss.AD.EntityModelBASE;
 using Es.Riam.Gnoss.CL;
 using Es.Riam.Gnoss.CL.RelatedVirtuoso;
-using Es.Riam.Gnoss.HealthChecks;
-using Es.Riam.Gnoss.RabbitMQ;
 using Es.Riam.Gnoss.Util.Configuracion;
 using Es.Riam.Gnoss.Util.General;
 using Es.Riam.Gnoss.Util.Seguridad;
 using Es.Riam.Interfaces.InterfacesOpen;
-using Es.Riam.Open;
-using Es.Riam.OpenReplication;
 using Es.Riam.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Es.Riam.Gnoss.HealthChecks;
+using Es.Riam.Gnoss.RabbitMQ;
+using Microsoft.AspNetCore.Builder;
 using System;
 using System.Collections;
+using Microsoft.AspNetCore.Hosting;
+using Es.Riam.OpenReplication;
+using Es.Riam.Open;
 
 namespace Gnoss.BackgroundTask.CacheRefresh
 {
