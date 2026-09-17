@@ -11,6 +11,7 @@ using Es.Riam.Gnoss.Servicios;
 using Es.Riam.Gnoss.Util.Configuracion;
 using Es.Riam.Gnoss.Util.General;
 using Es.Riam.Gnoss.Web.MVC.Models.Administracion;
+using Es.Riam.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -38,7 +39,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
         {
         }
 
-        public override void RealizarMantenimiento(EntityContext entityContext, EntityContextBASE entityContextBASE, UtilidadesVirtuoso utilidadesVirtuoso, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, GnossCache gnossCache, VirtuosoAD virtuosoAD, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
+        public override void RealizarMantenimiento(EntityContext entityContext, EntityContextBASE entityContextBASE, UtilidadesVirtuoso utilidadesVirtuoso, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, GnossCache gnossCache, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
         {
             DateTime? fechaUltimaActualizacion = null;
 
@@ -60,15 +61,9 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                         break;
                 }
             }
-
-            WebClient clienteWeb = null;
             try
             {
-                clienteWeb = new WebClient();
-                clienteWeb.Headers.Add(HttpRequestHeader.UserAgent, "GnossBotChequeoCache");
-
-                string respuesta = clienteWeb.DownloadString(UrlRefrescoComponente);
-                clienteWeb.Dispose();
+                UtilWeb.WebRequest("GET", UrlRefrescoComponente, null, pUserAgent: "GnossBotChequeoCache");
             }
             catch (Exception ex)
             {
@@ -84,8 +79,6 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             }
             finally
             {
-                clienteWeb.Dispose();
-
                 string urlHost = new Uri(UrlRefrescoComponente).Host;
 
                 if (PeticionesWebActuales.ContainsKey(urlHost) && PeticionesWebActuales[urlHost].Contains(UrlRefrescoComponente))

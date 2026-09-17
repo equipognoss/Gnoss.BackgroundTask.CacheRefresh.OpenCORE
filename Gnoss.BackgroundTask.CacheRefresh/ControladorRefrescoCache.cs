@@ -83,7 +83,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="pFicheroConfiguracionSitioWeb">Ruta al archivo de configuración del sitio Web</param>
+        /// <param name="pFicheroConfiguracionSitioWeb">Ruta al archivo de configuraciï¿½n del sitio Web</param>
         public ControladorRefrescoCache(int pNumeroMaxPeticionesWebSimultaneas, IServiceScopeFactory serviceScope, ConfigService configService, ILogger<ControladorRefrescoCache> logger, ILoggerFactory loggerFactory)
             : base(serviceScope, configService,logger,loggerFactory)
         {
@@ -99,7 +99,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
         #endregion
 
-        #region Métodos generales
+        #region Mï¿½todos generales
 
         Dictionary<string, DateTime> peticionesProcesadas = new Dictionary<string, DateTime>();
 
@@ -110,7 +110,6 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             {
                 EntityContext entityContext = scope.ServiceProvider.GetRequiredService<EntityContext>();
                 LoggingService loggingService = scope.ServiceProvider.GetRequiredService<LoggingService>();
-                VirtuosoAD virtuosoAD = scope.ServiceProvider.GetRequiredService<VirtuosoAD>();
                 RedisCacheWrapper redisCacheWrapper = scope.ServiceProvider.GetRequiredService<RedisCacheWrapper>();
                 ConfigService configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
                 IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication = scope.ServiceProvider.GetRequiredService<IServicesUtilVirtuosoAndReplication>();
@@ -148,7 +147,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
                         if (!filaCola.TipoEvento.Equals((short)TiposEventosRefrescoCache.BusquedaVirtuoso) || (filaCola.TipoEvento.Equals((short)TiposEventosRefrescoCache.BusquedaVirtuoso) && !mListaProyectos.Contains(filaCola.ProyectoID.ToString())))
                         {
-                            ProcesarFilaColaRefrescoCache(filaCola, entityContext, loggingService, redisCacheWrapper, virtuosoAD, servicesUtilVirtuosoAndReplication);
+                            ProcesarFilaColaRefrescoCache(filaCola, entityContext, loggingService, redisCacheWrapper, servicesUtilVirtuosoAndReplication);
                             if (filaCola.TipoEvento.Equals((short)TiposEventosRefrescoCache.BusquedaVirtuoso))
                             {
                                 mListaProyectos.Add(filaCola.ProyectoID.ToString());
@@ -174,7 +173,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             }
         }
 
-        private void ProcesarFilaColaRefrescoCache(BaseComunidadDS.ColaRefrescoCacheRow pFilaColaRefrescoCache, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, VirtuosoAD virtuosoAD, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
+        private void ProcesarFilaColaRefrescoCache(BaseComunidadDS.ColaRefrescoCacheRow pFilaColaRefrescoCache, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
         {
             EstaHiloActivo = true;
             pFilaColaRefrescoCache.Estado = 0;
@@ -189,7 +188,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 catch (Exception ex)
                 {
                     pFilaColaRefrescoCache.Estado = 1;
-                    EnviarCorreoErrorYGuardarLog(ex, "Error Refresco caché (ProcesarFilaModificarCaducidadCache)", entityContext, loggingService);
+                    EnviarCorreoErrorYGuardarLog(ex, "Error Refresco cachï¿½ (ProcesarFilaModificarCaducidadCache)", entityContext, loggingService);
                 }
             }
             else
@@ -215,7 +214,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
                 ComprobarCancelacionHilo();
 
-                ProcesarFila(pFilaColaRefrescoCache, entityContext, loggingService, redisCacheWrapper, virtuosoAD, servicesUtilVirtuosoAndReplication);
+                ProcesarFila(pFilaColaRefrescoCache, entityContext, loggingService, redisCacheWrapper, servicesUtilVirtuosoAndReplication);
             }
         }
 
@@ -226,6 +225,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 RabbitMQClient.ReceivedDelegate funcionProcesarItem = new RabbitMQClient.ReceivedDelegate(ProcesarItem);
                 RabbitMQClient.ShutDownDelegate funcionShutDown = new RabbitMQClient.ShutDownDelegate(OnShutDown);
 
+                mRabbitMQClient?.Dispose();
                 mRabbitMQClient = new RabbitMQClient(RabbitMQClient.BD_SERVICIOS_WIN, NOMBRE_COLA, loggingService, mConfigService, mLoggerFactory.CreateLogger<RabbitMQClient>(), mLoggerFactory, EXCHANGE, NOMBRE_COLA);
                 mListaProyectos = new List<string>();
                 try
@@ -250,9 +250,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 {
                     EntityContext entityContext = scope.ServiceProvider.GetRequiredService<EntityContext>();
                     EntityContextBASE entityContextBASE = scope.ServiceProvider.GetRequiredService<EntityContextBASE>();
-                    UtilidadesVirtuoso utilidadesVirtuoso = scope.ServiceProvider.GetRequiredService<UtilidadesVirtuoso>();
                     LoggingService loggingService = scope.ServiceProvider.GetRequiredService<LoggingService>();
-                    VirtuosoAD virtuosoAD = scope.ServiceProvider.GetRequiredService<VirtuosoAD>();
                     RedisCacheWrapper redisCacheWrapper = scope.ServiceProvider.GetRequiredService<RedisCacheWrapper>();
                     GnossCache gnossCache = scope.ServiceProvider.GetRequiredService<GnossCache>();
                     IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication = scope.ServiceProvider.GetRequiredService<IServicesUtilVirtuosoAndReplication>();
@@ -263,7 +261,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
 
                         List<CMSComponente> listaComponentesRefresco = CargarComponentesCaducados(entityContext, loggingService, servicesUtilVirtuosoAndReplication);
-                        //Esto lo tengo que hacer en un foreach aparte porque si no salta la excepción de Colleción modificada
+                        //Esto lo tengo que hacer en un foreach aparte porque si no salta la excepciï¿½n de Colleciï¿½n modificada
                         foreach (CMSComponente filacomponente in listaComponentesRefresco)
                         {
                             RefrescarCacheComponente(filacomponente, entityContext, loggingService, redisCacheWrapper, servicesUtilVirtuosoAndReplication);
@@ -278,7 +276,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                     }
                     catch (Exception ex)
                     {
-                        loggingService.GuardarLog("ERROR: Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                        loggingService.GuardarLog("ERROR: Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                         ControladorConexiones.CerrarConexiones(false);
                     }
                     finally
@@ -292,7 +290,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             ControladorConexiones.CerrarConexiones(false);
         }
 
-        public override void RealizarMantenimiento(EntityContext entityContext, EntityContextBASE entityContextBASE, UtilidadesVirtuoso utilidadesVirtuoso, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, GnossCache gnossCache, VirtuosoAD virtuosoAD, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
+        public override void RealizarMantenimiento(EntityContext entityContext, EntityContextBASE entityContextBASE, UtilidadesVirtuoso utilidadesVirtuoso, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, GnossCache gnossCache, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
         {
             GestorParametroAplicacionDS = new GestorParametroAplicacion();
             ParametroAplicacionGBD parametroAplicacionGBD = new ParametroAplicacionGBD(loggingService, entityContext, mConfigService);
@@ -311,20 +309,20 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             Task tarea2 = Task.Factory.StartNew(() => RealizarMantenimientoBaseDatosColas());
         }
 
-        private void ProcesarFila(BaseComunidadDS.ColaRefrescoCacheRow pFilaCola, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, VirtuosoAD virtuosoAD, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
+        private void ProcesarFila(BaseComunidadDS.ColaRefrescoCacheRow pFilaCola, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
         {
             switch (pFilaCola.TipoEvento)
             {
                 case (short)TiposEventosRefrescoCache.BusquedaVirtuoso:
                     try
                     {
-                        ProcesarFilaDeBusqueda(pFilaCola, entityContext, loggingService, redisCacheWrapper, virtuosoAD, servicesUtilVirtuosoAndReplication);
+                        ProcesarFilaDeBusqueda(pFilaCola, entityContext, loggingService, redisCacheWrapper, servicesUtilVirtuosoAndReplication);
                     }
                     catch (ThreadAbortException) { }
                     catch (Exception ex)
                     {
                         pFilaCola.Estado = 1;
-                        EnviarCorreoErrorYGuardarLog(ex, "Error Refresco caché (ProcesarFilaDeBusqueda)", entityContext, loggingService);
+                        EnviarCorreoErrorYGuardarLog(ex, "Error Refresco cachï¿½ (ProcesarFilaDeBusqueda)", entityContext, loggingService);
                     }
 
                     try
@@ -335,7 +333,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                     catch (Exception ex)
                     {
                         pFilaCola.Estado = 1;
-                        EnviarCorreoErrorYGuardarLog(ex, "Error Refresco caché (ProcesarFilaDeComponentes)", entityContext, loggingService);
+                        EnviarCorreoErrorYGuardarLog(ex, "Error Refresco cachï¿½ (ProcesarFilaDeComponentes)", entityContext, loggingService);
                     }
                     break;
                 case (short)TiposEventosRefrescoCache.RefrescarComponentesRecursos:
@@ -347,7 +345,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                     catch (Exception ex)
                     {
                         pFilaCola.Estado = 1;
-                        EnviarCorreoErrorYGuardarLog(ex, "Error Refresco caché (ProcesarFilaDeComponentes)", entityContext, loggingService);
+                        EnviarCorreoErrorYGuardarLog(ex, "Error Refresco cachï¿½ (ProcesarFilaDeComponentes)", entityContext, loggingService);
                     }
                     break;
                 case (short)TiposEventosRefrescoCache.ConfiguracionComponentesCambiada:
@@ -364,7 +362,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                     catch (Exception ex)
                     {
                         pFilaCola.Estado = 1;
-                        EnviarCorreoErrorYGuardarLog(ex, "Error Refresco caché (ProcesarFilaDeComponentes)", entityContext, loggingService);
+                        EnviarCorreoErrorYGuardarLog(ex, "Error Refresco cachï¿½ (ProcesarFilaDeComponentes)", entityContext, loggingService);
                     }
                     break;
             }
@@ -466,7 +464,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             return listaFiltros;
         }
 
-        private void ProcesarFilaDeBusqueda(BaseComunidadDS.ColaRefrescoCacheRow pFilaCola, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, VirtuosoAD virtuosoAD, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
+        private void ProcesarFilaDeBusqueda(BaseComunidadDS.ColaRefrescoCacheRow pFilaCola, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
         {
             // Cargar los datos del proyecto
             string urlPropiaProyecto = string.Empty;
@@ -499,7 +497,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
             if (filaParametroGeneral != null && filaParametroGeneral.PestanyaRecursosVisible)
             {
-                ProyectoCL proyectoCL = new ProyectoCL(entityContext, loggingService, redisCacheWrapper, mConfigService, virtuosoAD, servicesUtilVirtuosoAndReplication, mLoggerFactory.CreateLogger<ProyectoCL>(), mLoggerFactory);
+                ProyectoCL proyectoCL = new ProyectoCL(entityContext, loggingService, redisCacheWrapper, mConfigService, null, servicesUtilVirtuosoAndReplication, mLoggerFactory.CreateLogger<ProyectoCL>(), mLoggerFactory);
                 Dictionary<string, string> parametroProyecto = proyectoCL.ObtenerParametrosProyecto(pFilaCola.ProyectoID);
                 proyectoCL.Dispose();
 
@@ -507,7 +505,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 Dictionary<string, string> listaIdiomas = mConfigService.ObtenerListaIdiomasDictionary();
                 if (!parametroProyecto.ContainsKey(ParametroAD.PropiedadContenidoMultiIdioma))
                 {
-                    // Por cada idioma recogeneramos la caché de usuarios conectados, invitados y bots.
+                    // Por cada idioma recogeneramos la cachï¿½ de usuarios conectados, invitados y bots.
                     foreach (string idioma in listaIdiomas.Keys)
                     {
                         RegenerarCacheBusquedaUsuariosYBots(cargadorResultados, cargadorFacetas, pFilaCola, ubicacionBusqueda, idioma, parametros_adiccionales, loggingService);
@@ -515,7 +513,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 }
                 else
                 {
-                    // Por cada idioma recogeneramos la caché de usuarios conectados, invitados y bots.
+                    // Por cada idioma recogeneramos la cachï¿½ de usuarios conectados, invitados y bots.
                     foreach (string idioma in listaIdiomas.Keys)
                     {
                         string parametrosAdiccionalesTemporales = parametros_adiccionales + "|" + parametroProyecto[ParametroAD.PropiedadContenidoMultiIdioma] + "=" + idioma;
@@ -527,7 +525,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
 
             if (!pFilaCola.TipoBusqueda.Equals((short)TipoBusqueda.PersonasYOrganizaciones))
             {
-                FacetadoCL facetadoCL = new FacetadoCL(mUrlIntragnoss, entityContext, loggingService, redisCacheWrapper, mConfigService, virtuosoAD, servicesUtilVirtuosoAndReplication, mLoggerFactory.CreateLogger<FacetadoCL>(), mLoggerFactory);
+                FacetadoCL facetadoCL = new FacetadoCL(mUrlIntragnoss, entityContext, loggingService, redisCacheWrapper, mConfigService, null, servicesUtilVirtuosoAndReplication, mLoggerFactory.CreateLogger<FacetadoCL>(), mLoggerFactory);
                 facetadoCL.Dominio = mDominio;
                 facetadoCL.InvalidarResultadosYFacetasDeBusquedaEnProyecto(pFilaCola.ProyectoID, FacetadoAD.TipoBusquedaToString((TipoBusqueda)pFilaCola.TipoBusqueda), true);
                 facetadoCL.BorrarRSSDeComunidad(pFilaCola.ProyectoID);
@@ -537,14 +535,14 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                     facetadoCL.InvalidarResultadosYFacetasDeBusquedaEnProyecto(pFilaCola.ProyectoID, pFilaCola.InfoExtra, true);
                 }*/
 
-                //Si contiene el tipo de búsqueda que se está pidiendo se necesitan limpiar todas las pestanyas que contengan esa búsqueda.
+                //Si contiene el tipo de bï¿½squeda que se estï¿½ pidiendo se necesitan limpiar todas las pestanyas que contengan esa bï¿½squeda.
                 ProyectoCN proyCN = new ProyectoCN(entityContext, loggingService, mConfigService, servicesUtilVirtuosoAndReplication, mLoggerFactory.CreateLogger<ProyectoCN>(), mLoggerFactory);
                 DataWrapperProyecto dataWrapperProyecto = proyCN.ObtenerProyectoPorID(pFilaCola.ProyectoID);
                 foreach (ProyectoPestanyaBusqueda pestanyas in dataWrapperProyecto.ListaProyectoPestanyaBusqueda)
                 {
                     if (pestanyas.CampoFiltro.Contains(FacetadoAD.TipoBusquedaToString((TipoBusqueda)pFilaCola.TipoBusqueda)) || (!pFilaCola.IsInfoExtraNull() && pestanyas.CampoFiltro.Contains(pFilaCola.InfoExtra)))
                     {
-                        //Pasamos el parámetro UsuariosConPrivados = false para que limpie las claves de caché.
+                        //Pasamos el parï¿½metro UsuariosConPrivados = false para que limpie las claves de cachï¿½.
                         facetadoCL.InvalidarResultadosYFacetasDeBusquedaEnProyecto(pFilaCola.ProyectoID, pestanyas.CampoFiltro, false);
                     }
                 }
@@ -571,7 +569,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar los resultados de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar los resultados de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -587,7 +585,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar las facetas etiquetas de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar las facetas etiquetas de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -603,7 +601,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar las facetas categorias de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar las facetas categorias de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -619,7 +617,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar el resto de facetas de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar el resto de facetas de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -636,7 +634,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                     try
                     {
                         pFilaCola.Estado = 1;
-                        loggingService.GuardarLog("Error al refrescar las facetas de la home de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                        loggingService.GuardarLog("Error al refrescar las facetas de la home de la fila " + pFilaCola.ColaID + " para el usuario conectado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                     }
                     catch (Exception) { }
                 }
@@ -647,7 +645,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             #region Invitado
 
             /*
-                 * La caché de resultados del usuario conectado y del usuari invitado se comparten (tienen la misma clave de caché)
+                 * La cachï¿½ de resultados del usuario conectado y del usuari invitado se comparten (tienen la misma clave de cachï¿½)
                  */
             //Usuario Invitado
             try
@@ -661,7 +659,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar los resultados de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar los resultados de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -677,7 +675,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar las facetas etiquetas de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar las facetas etiquetas de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -693,7 +691,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar las facetas categorias de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar las facetas categorias de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -709,7 +707,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar el resto de facetas de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar el resto de facetas de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -726,7 +724,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                     try
                     {
                         pFilaCola.Estado = 1;
-                        loggingService.GuardarLog("Error al refrescar las facetas de la home de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                        loggingService.GuardarLog("Error al refrescar las facetas de la home de la fila " + pFilaCola.ColaID + " para el usuario Invitado en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                     }
                     catch (Exception) { }
                 }
@@ -747,7 +745,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar los resultados de la fila " + pFilaCola.ColaID + " para el bot en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar los resultados de la fila " + pFilaCola.ColaID + " para el bot en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -762,7 +760,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                 try
                 {
                     pFilaCola.Estado = 1;
-                    loggingService.GuardarLog("Error al refrescar las facetas de la fila " + pFilaCola.ColaID + " para el bot en idioma " + pIdioma + " ERROR:  Excepción: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
+                    loggingService.GuardarLog("Error al refrescar las facetas de la fila " + pFilaCola.ColaID + " para el bot en idioma " + pIdioma + " ERROR:  Excepciï¿½n: " + ex.ToString() + "\n\n\tTraza: " + ex.StackTrace, mlogger);
                 }
                 catch (Exception) { }
             }
@@ -806,7 +804,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             return filaParametroGeneral;
         }
 
-        #region Refresco de caché de componentes
+        #region Refresco de cachï¿½ de componentes
 
 
         private void RefrescarCacheComponente(Guid pComponenteID, Guid pProyectoID, EntityContext entityContext, LoggingService loggingService, RedisCacheWrapper redisCacheWrapper, IServicesUtilVirtuosoAndReplication servicesUtilVirtuosoAndReplication)
@@ -866,19 +864,19 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
             {
                 try
                 {
-                    //Obtengo la url de refresco y hago una petición web
+                    //Obtengo la url de refresco y hago una peticiï¿½n web
                     string urlRefresco = ObtenerURLRefrescoComponente(pFilaComponente, entityContext, loggingService, servicesUtilVirtuosoAndReplication);
 
                     string urlHost = new Uri(urlRefresco).Host;
 
                     if (!mPeticionesWebActuales.ContainsKey(urlHost))
                     {
-                        //Añado el dominio a la lista de peticiones
+                        //Aï¿½ado el dominio a la lista de peticiones
                         mPeticionesWebActuales.Add(urlHost, new List<string>());
                     }
                     else if (mPeticionesWebActuales[urlHost].Contains(urlRefresco))
                     {
-                        //Esta petición ya está en marcha, no la voy a hacer 2 veces porque el efecto sería el mismo
+                        //Esta peticiï¿½n ya estï¿½ en marcha, no la voy a hacer 2 veces porque el efecto serï¿½a el mismo
                         return;
                     }
 
@@ -887,7 +885,7 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
                     {
                         if (segundosEsperando < 10)
                         {
-                            //Hemos llegado al máximo de peticiones web concurrentes permitidas a este dominio, toca esperar hasta que termine alguna
+                            //Hemos llegado al mï¿½ximo de peticiones web concurrentes permitidas a este dominio, toca esperar hasta que termine alguna
                             Thread.Sleep(1000);
                             segundosEsperando++;
                         }
@@ -944,11 +942,11 @@ namespace Es.Riam.Gnoss.Win.RefrescoCache
         //        TipoCaducidadComponenteCMS tipoCaducidad = (TipoCaducidadComponenteCMS)filaComponente.TipoCaducidadComponente;
         //        if (ComprobarTipoCaducidadComponenteCaducaPorTiempo(tipoCaducidad))
         //        {
-        //            //Reviso la fecha de actualización, si ya se ha pasado, la fecha de actualización será ahora mismo
+        //            //Reviso la fecha de actualizaciï¿½n, si ya se ha pasado, la fecha de actualizaciï¿½n serï¿½ ahora mismo
         //            DateTime fechaActualizacion = DateTime.Now;
         //            if (!filaComponente.IsFechaUltimaActualizacionNull() && filaComponente.FechaUltimaActualizacion > DateTime.Now)
         //            {
-        //                //La fecha de actualización es posterior a este momento, lo pongo para que se actualice cuando le toque
+        //                //La fecha de actualizaciï¿½n es posterior a este momento, lo pongo para que se actualice cuando le toque
         //                fechaActualizacion = filaComponente.FechaUltimaActualizacion;
         //            }
         //            ListaFechasCaducidadComponentes.Add(filaComponente.ComponenteID, fechaActualizacion);
